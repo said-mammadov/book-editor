@@ -1,0 +1,516 @@
+2 Tətbiq Trafikinin Tutulması
+
+Təəccüblüdür ki, faydalı trafikin tutulması protokol analizinin çətin tərəflərindən biri ola bilər. Bu fəsildə iki fərqli tutma texnikası təsvir olunur: passiv və aktiv. Passiv tutma trafiklə birbaşa qarşılıqlı əlaqəyə girmir. Bunun əvəzinə, məlumatı şəbəkə üzərindən ötürülərkən çıxarır; bu yanaşma Wireshark kimi alətlərdən sizə tanış olmalıdır. Müxtəlif tətbiqlərin trafiki yönləndirmək üçün fərqli mexanizmlər təqdim etdiyini görəcəksiniz (və bu mexanizmlərin hər birinin öz üstünlükləri və çatışmazlıqları var). Aktiv tutma isə müştəri tətbiqi ilə server arasındakı trafikə müdaxilə edir; bu, güclü imkanlar versə də, müəyyən çətinliklər yarada bilər. Aktiv tutmanı proxy-lər və hətta man-in-the-middle hücumu kontekstində düşünə bilərsiniz. Gəlin həm aktiv, həm də passiv texnikalara daha dərindən baxaq.
+
+
+Passiv Şəbəkə Trafikinin Tutulması
+
+Passiv tutma nisbətən asan texnikadır: adətən xüsusi avadanlıq tələb etmir və çox vaxt öz kodunuzu yazmağa da ehtiyac olmur. Şəkil 2-1-də tipik bir ssenari göstərilir: müştəri və server şəbəkə üzərindən Ethernet vasitəsilə əlaqə saxlayır.
+
+/picture
+
+Şəkil 2-1: Passiv şəbəkə tutmasının nümunəsi
+
+	Passiv şəbəkə tutması ya trafik ötərkən şəbəkənin özündə onu “tap” etməklə, ya da birbaşa müştəri və ya server hostunda sniffing etməklə həyata keçirilə bilər.
+
+Wireshark üçün Qısa Giriş
+
+Wireshark bəlkə də mövcud olan ən populyar paket-sniffing tətbiqidir. O, cross-platform-dur, istifadəsi asandır və daxilində bir çox protokol analiz xüsusiyyəti var. 5-ci fəsildə protokol analizinə kömək etmək üçün dissector yazmağı öyrənəcəksiniz, amma hələlik Wireshark-ı şəbəkədən IP trafiki tutmaq üçün quraşdıraq.
+	Ethernet interfeysindən (kabel və ya simsiz) trafik tutmaq üçün tutma cihazı promiscuous mode-da olmalıdır. Promiscuous mode-da olan cihaz gördüyü istənilən Ethernet frame-i qəbul edib emal edir, hətta həmin frame həmin interfeys üçün nəzərdə tutulmamış olsa belə. Eyni kompüterdə işləyən tətbiqi tutmaq asandır: outbound şəbəkə interfeysini və ya local loopback interfeysini (daha çox localhost kimi tanınır) izləmək kifayətdir. Əks halda, trafikin sizin şəbəkə interfeysinizə göndərilməsini təmin etmək üçün hub və ya konfiqurasiya edilmiş switch kimi şəbəkə avadanlığına ehtiyac ola bilər.
+	Şəkil 2-2 Ethernet interfeysindən trafik tutularkən standart görüntünü göstərir.
+
+/picture
+
+Şəkil 2-2: Standart Wireshark görüntüsü
+
+	Üç əsas görüntü sahəsi var. u sahəsi şəbəkədən tutulan xam paketlərin timeline görünüşünü göstərir. Timeline mənbə və təyinat IP ünvanlarının siyahısını, həmçinin deşifrə edilmiş protokol xülasə məlumatını verir. v sahəsi paketin dissector olunmuş görünüşünü təqdim edir və onu OSI şəbəkə stack modelinə uyğun fərqli protokol laylarına ayırır. w sahəsi isə tutulmuş paketi xam (raw) formada göstərir.
+	TCP şəbəkə protokolu stream-based-dir və düşmüş paketlərdən və ya məlumat korlanmasından bərpa olunmaq üçün dizayn edilib. Şəbəkə və IP-nin təbiətinə görə paketlərin müəyyən ardıcıllıqla çatacağına zəmanət yoxdur. Buna görə paket tutarkən timeline görüntüsünü şərh etmək çətin ola bilər. Xoşbəxtlikdən, Wireshark tanınan protokollar üçün dissector-lar təqdim edir; bunlar adətən bütün stream-i yenidən yığıb məlumatı bir yerdə göstərir. Məsələn, timeline-da TCP bağlantısına aid bir paketi seçin və əsas menyudan Analyze > Follow TCP Stream seçin. Şəkil 2-3-ə bənzər dialoq görünməlidir. Dissector-u olmayan protokollarda da Wireshark stream-i deşifrə edib oxunaqlı pəncərədə təqdim edə bilir.
+
+/picture
+
+Şəkil 2-3: TCP stream-in izlənməsi
+
+	Wireshark olduqca geniş funksiyalı alətdir və bütün imkanlarını bu kitabın çərçivəsində izah etmək mümkün deyil. Əgər tanış deyilsinizsə, Practical Packet Analysis, 3rd Edition (No Starch Press, 2017) kimi yaxşı mənbə əldə edin və onun faydalı xüsusiyyətlərini öyrənin. Tətbiq şəbəkə trafikinin analizində Wireshark əvəzsizdir və General Public License (GPL) altında pulsuzdur.
+
+Passiv Tutma üçün Alternativ Texnikalar
+
+Bəzən paket sniffer istifadə etmək uyğun olmur; məsələn, trafiki tutmağa icazəniz olmayan hallarda. Siz inzibati giriş olmadan bir sistemdə penetration test aparır və ya məhdud səlahiyyətli shell olan mobil cihazla işləyirsiniz. Həmçinin yalnız test etdiyiniz tətbiqə aid trafiki görmək istəyə bilərsiniz. Paket sniffing ilə bunu etmək həmişə asan deyil, vaxta görə korrelyasiya etməli olursunuz. Bu bölmədə paket-sniffing aləti istifadə etmədən lokal tətbiqdən şəbəkə trafikini çıxarmağın bir neçə üsulunu təsvir edəcəyəm.
+
+System Call Tracing
+
+Bir çox müasir əməliyyat sistemi iki icra rejimi təqdim edir. Kernel mode yüksək səlahiyyətlə işləyir və OS-in əsas funksionallığını həyata keçirən kodu saxlayır. User mode isə gündəlik proseslərin işlədiyi yerdir. Kernel user mode-a xüsusi system call-lar toplusunu ixrac etməklə xidmət göstərir (bax: Şəkil 2-4); bununla istifadəçilər fayllara giriş, proses yaratma və — məqsədimiz üçün ən vacibi — şəbəkələrə qoşulma imkanı əldə edirlər.
+
+/picture
+
+Şəkil 2-4: System call-lar vasitəsilə user-to-kernel şəbəkə əlaqəsinin nümunəsi
+
+	Tətbiq uzaq serverə qoşulmaq istəyəndə bağlantını açmaq üçün OS kernel-ə xüsusi system call-lar göndərir. Sonra tətbiq şəbəkə məlumatını oxuyur və yazır. Şəbəkə tətbiqlərinizin işlədiyi əməliyyat sistemindən asılı olaraq, bu çağırışları birbaşa monitorinq edib tətbiqdən passiv şəkildə məlumat çıxara bilərsiniz.
+	Unix-like sistemlərin çoxu şəbəkə kommunikasiya üçün Berkeley Sockets modelinə bənzər system call-lar implement edir. Bu təəccüblü deyil, çünki IP protokolu ilkin olaraq Berkeley Software Distribution (BSD) 4.2 Unix əməliyyat sistemində reallaşdırılmışdı. Bu socket implementasiyası POSIX-in də bir hissəsidir və de-fakto standart sayılır. Cədvəl 2-1 Berkeley Sockets API-də daha vacib system call-ların bir qismini göstərir.
+Cədvəl 2-1: Şəbəkə üçün yayğın Unix system call-ları
+
+/picture
+
+	Bu system call-ların necə işlədiyini öyrənmək üçün yaxşı mənbə The TCP/IP Guide (No Starch Press, 2005) kitabıdır. Onlayn da çoxlu mənbə var və Unix-like sistemlərin əksəriyyəti terminalda man 2 syscall_name əmri ilə baxa biləcəyiniz manual-larla gəlir. İndi isə system call-ları necə monitorinq etməyə baxaq.
+
+Linux-da strace Utility-si
+
+Linux-da xüsusi icazə olmadan user proqramından system call-ları birbaşa monitorinq edə bilərsiniz — yalnız izləmək istədiyiniz tətbiq privileged user kimi işləyirsə istisnadır. Bir çox Linux distributivində işinizi xeyli asanlaşdıran strace utility-si mövcuddur. Əgər standart olaraq quraşdırılmayıbsa, distributivinizin paket meneceri ilə yükləyin və ya source koddan compile edin.
+	Aşağıdakı əmri işlədin; /path/to/app yerinə test etdiyiniz tətbiqin yolunu, args yerinə isə lazım olan parametrləri yazın. Bu əmrlə həmin tətbiqin istifadə etdiyi şəbəkə system call-ları loglanacaq:
+________________________________________________________________________________
+$ strace –e trace=network,read,write /path/to/app args
+________________________________________________________________________________
+
+	Bir neçə string oxuyub-yazan şəbəkə tətbiqini izləyək və strace çıxışına baxaq. Listing 2-1-də dörd log qeydi göstərilib (qısa olsun deyə əlavə loglar çıxarılıb).
+________________________________________________________________________________
+$ strace -e trace=network,read,write customapp
+
+--snip-- 
+① socket(PF_INET, SOCK_STREAM, IPPROTO_TCP) = 3
+② connect(3, {sa_family=AF_INET, sin_port=htons(5555),
+			sin_addr=inet_addr("192.168.10.1")}, 16) = 0
+③ write(3, "Hello World!\n", 13)        = 13
+④ read(3, "Boo!\n", 2048)              = 5
+________________________________________________________________________________
+
+Listing 2-1: strace utility-si üçün nümunə çıxış
+
+Birinci qeyd ① yeni TCP socket yaradır və ona 3 handle-ı verilir. Növbəti qeyd ② connect system call-ın 192.168.10.1 IP ünvanında 5555 portuna TCP bağlantısı yaratmaq üçün istifadə edildiyini göstərir. Tətbiq sonra Hello World! sətirini yazır ③ və ardınca Boo! sətirini oxuyur ④. Çıxış göstərir ki, yüksək səlahiyyətiniz olmasa belə, bu utility ilə system call səviyyəsində tətbiqin nə etdiyini yaxşı anlamaq mümkündür.
+
+DTrace ilə Şəbəkə Bağlantılarının Monitorinqi
+
+DTrace Solaris (ilk hazırlandığı platforma), macOS və FreeBSD daxil olmaqla bir çox Unix-like sistemdə mövcud olan çox güclü alətdir. O, system call-lar daxil olmaqla xüsusi trace provider-lar üzərində sistem miqyaslı probe-lar qurmağa imkan verir. DTrace, C-yə bənzər sintaksisli dildə yazılan script-lərlə konfiqurasiya olunur. Bu alət haqqında əlavə məlumat üçün onlayn DTrace Guide-a baxın: http://www.dtracebook.com/index.php/DTrace_Guide.
+
+Listing 2-2 DTrace ilə outbound IP bağlantılarını monitorinq edən script nümunəsini göstərir.
+traceconnect.d
+________________________________________________________________________________
+/* traceconnect.d - connect system call monitorinqi üçün sadə DTrace skripti */
+① struct sockaddr_in {
+  	short		sin_family;
+  	unsigned short	sin_port;
+  	in_addr_t	sin_addr;
+  	char		sin_zero[8];
+};
+② syscall::connect:entry
+③ /arg2 == sizeof(struct sockaddr_in)/
+{
+	③ addr = (struct sockaddr_in*)copyin(arg1, arg2);
+	④ printf("process:'%s' %s:%d", execname, inet_ntop(2, &addr->sin_addr),ntohs(addr->sin_port));
+}
+________________________________________________________________________________
+
+Listing 2-2: connect system call-ı izləmək üçün sadə DTrace skripti
+
+	Bu sadə skript connect system call-ını izləyir və IPv4 TCP/UDP bağlantılarını çıxışa verir. Bu system call üç parametr qəbul edir; DTrace script dilində bunlar arg0, arg1 və arg2 kimi təqdim olunur və kernel tərəfindən ilkinləşdirilir. arg0 socket file descriptor-dur (bizə lazım deyil), arg1 qoşulduğumuz socket ünvanının yaddaş ünvanıdır, arg2 isə bu ünvanın uzunluğudur. Parametr 0 bu halda gərəksiz olan socket handle-dır. Sonrakı parametr user proses yaddaşındakı socket address strukturunun ünvanıdır; qoşulma ünvanını saxlayır və socket tipinə görə ölçüsü dəyişə bilər (məsələn, IPv4 ünvanları IPv6-dan kiçikdir). Son parametr socket address strukturunun byte ilə uzunluğudur.
+	Skript ①-də IPv4 bağlantıları üçün sockaddr_in strukturunu təyin edir; çox vaxt bu strukturları birbaşa sistemin C header fayllarından götürmək olur. İzlənəcək system call ②-də göstərilir. ③-də DTrace-ə məxsus filtr istifadə olunur ki, yalnız socket address ölçüsü sockaddr_in ilə eyni olan connect çağırışları izlənilsin. x-də sockaddr_in strukturu prosesinizdən kopyalanıb DTrace-in yoxlaması üçün lokal struktura köçürülür. y-də proses adı, təyinat IP ünvanı və port konsola çap olunur.
+	Bu skripti işlətmək üçün traceconnect.d adlı fayla yazın və root istifadəçisi kimi dtrace -s traceconnect.d əmrini verin. Şəbəkəyə qoşulan tətbiqdən istifadə etdikdə çıxış Listing 2-3 kimi görünməlidir.
+________________________________________________________________________________
+process:'Google Chrome'		173.194.78.125:5222
+process:'Google Chrome'		173.194.66.95:443
+process:'Google Chrome'		217.32.28.199:80
+process:'ntpd'			17.72.148.53:123
+process:'Mail'			173.194.67.109:993
+process:'syncdefaultsd'		17.167.137.30:443
+process:'AddressBookSour'	17.172.192.30:443
+________________________________________________________________________________
+Listing 2-3: traceconnect.d skriptindən nümunə çıxış
+
+	Çıxış ayrı-ayrı IP ünvanlarına əlaqələri göstərir və proses adını (məsələn, 'Google Chrome'), IP ünvanını və qoşulduğu portu çap edir. Təəssüf ki, bu çıxış həmişə Linux-da strace qədər faydalı olmur, amma DTrace şübhəsiz dəyərli alətdir. Bu nümayiş DTrace-in edə bildiklərinin yalnız kiçik bir hissəsidir.
+
+Windows-da Process Monitor
+
+Unix-like sistemlərdən fərqli olaraq, Windows user-mode şəbəkə funksiyalarını birbaşa system call-larla implement etmir. Şəbəkə stack-i driver vasitəsilə təqdim olunur və bağlantı yaratmaq üçün fayl açma, oxuma və yazma system call-ları ilə şəbəkə socket-i konfiqurasiya edilir. Windows-da strace-ə bənzər imkan olsa belə, bu implementasiya digər platformalarla eyni səviyyədə şəbəkə trafikini izləməyi çətinləşdirir.
+	Windows (Vista və sonrakı versiyalar) tətbiqlərin şəbəkə aktivliyini monitorinq etməsinə imkan verən event generation framework-ünü dəstəkləyir. Bunu özünüz yazmaq kifayət qədər mürəkkəbdir, amma xoşbəxtlikdən sizin üçün alət artıq mövcuddur: Microsoft Process Monitor. Şəkil 2-5-də yalnız şəbəkə bağlantı hadisələri filtr ediləndə əsas interfeys görünür.
+
+/picture
+
+Şəkil 2-5: Process Monitor tutmasının nümunəsi
+
+	Şəkil 2-5-də dairəyə alınmış filtri seçmək monitorinq edilən prosesdən gələn yalnız şəbəkə bağlantı hadisələrini göstərir. Detallara cəlb olunan hostlar, istifadə olunan protokol və port daxildir. Tutma bağlantıya aid data məzmununu göstərməsə də, tətbiqin qurduğu şəbəkə əlaqələri barədə dəyərli insight verir. Process Monitor cari calling stack vəziyyətini də tuta bilir; bu da tətbiq daxilində şəbəkə bağlantılarının harda qurulduğunu müəyyən etməyə kömək edir. Bu mövzu 6-cı fəsildə, şəbəkə protokolunu anlamaq üçün binary reverse engineering etdikdə vacib olacaq. Şəkil 2-6 uzaq serverə tək HTTP bağlantısını detallı göstərir.
+
+/picture
+
+Şəkil 2-6: Tək tutulmuş bağlantı
+
+Sütun ① bağlantını quran prosesin adını göstərir. Sütun ② əməliyyatı göstərir; bu nümunədə uzaq serverə qoşulma, ilkin HTTP sorğusunun göndərilməsi və cavabın alınmasıdır. Sütun ③ mənbə və təyinat ünvanlarını, sütun ④ isə tutulmuş hadisə haqqında daha dərin məlumatı təqdim edir.
+	Bu həll digər platformalarda system call monitorinqi qədər güclü olmasa da, Windows-da konkret tətbiqin hansı şəbəkə protokollarından istifadə etdiyini müəyyən etmək üçün yenə faydalıdır. Bu texnika ilə data tutmaq mümkün deyil, amma istifadə olunan protokolları müəyyən etdikdən sonra aktiv şəbəkə tutması ilə analizinizi genişləndirə bilərsiniz.
+
+Passiv Tutmanın Üstünlükləri və Çatışmazlıqları
+
+Passiv tutmanın ən böyük üstünlüyü odur ki, müştəri və server tətbiqlərinin əlaqəsini pozmur. Trafikin mənbə və təyinat ünvanlarını dəyişmir, tətbiqlərdə dəyişiklik və ya yenidən konfiqurasiya tələb etmir.
+	Müştəri və ya server üzərində birbaşa nəzarətiniz yoxdursa, passiv tutma bəzən yeganə seçim ola bilər. Adətən məhdud səylə şəbəkə trafikini dinləməyin və tutmağın bir yolunu tapmaq mümkündür. Data topladıqdan sonra hansı aktiv tutma texnikalarının uyğun olduğunu və analiz etmək istədiyiniz protokola necə hücum etməyin daha doğru olacağını müəyyənləşdirə bilərsiniz.
+
+
+	Passiv şəbəkə trafik tutmasının əsas çatışmazlığı budur ki, paket sniffing kimi texnikalar çox aşağı səviyyədə işlədiyinə görə tətbiqin əslində nə qəbul etdiyini anlamaq çətin ola bilər. Wireshark kimi alətlər kömək edir, amma custom protokol analiz edirsinizsə, onunla birbaşa qarşılıqlı əlaqə qurmadan protokolu asanlıqla parçalamaq həmişə mümkün olmur.
+	Passiv tutma tətbiqin yaratdığı trafiki dəyişdirməyi də həmişə asan etmir. Trafiki dəyişdirmək hər zaman vacib deyil, amma şifrələnmiş protokollarla rastlaşanda, sıxmanı söndürmək istəyəndə və ya exploit üçün trafiki dəyişmək lazım gələndə faydalıdır.
+	Trafik analizi və yeni paket injection nəticə verməyəndə taktikanı dəyişin və aktiv tutma texnikalarını sınayın.
+
+Aktiv Şəbəkə Trafikinin Tutulması
+
+Aktiv tutma passivdən onunla fərqlənir ki, siz trafikin axınına təsir etməyə çalışırsınız; adətən bu, şəbəkə kommunikasiya üzərində man-in-the-middle hücumu ilə edilir. Şəkil 2-7-də göstərildiyi kimi, trafiki tutan cihaz adətən müştəri və server tətbiqləri arasında yerləşir və körpü (bridge) kimi davranır. Bu yanaşmanın bir neçə üstünlüyü var: trafiki dəyişmək, şifrələmə və sıxma kimi xüsusiyyətləri söndürmək mümkündür ki, bu da şəbəkə protokolunu analiz və exploit etməyi asanlaşdıra bilər.
+
+/picture
+
+Şəkil 2-7: Man-in-the-middle proxy
+
+	Bu yanaşmanın çatışmazlığı odur ki, adətən daha çətindir, çünki tətbiqin trafikini aktiv tutma sisteminizdən keçəcək şəkildə yenidən yönləndirməlisiniz. Aktiv tutma gözlənilməz və arzuolunmaz təsirlər də yarada bilər. Məsələn, server və ya müştərinin şəbəkə ünvanını proxy-yə dəyişsəniz, bu qarışıqlıq yaradıb tətbiqin trafiki səhv istiqamətə göndərməsinə səbəb ola bilər. Buna baxmayaraq, aktiv tutma tətbiq şəbəkə protokollarını analiz və exploit etmək üçün çox güman ən dəyərli texnikadır.
+
+Şəbəkə Proxy-ləri
+
+Şəbəkə trafikində man-in-the-middle hücumunu icra etməyin ən yayğın yolu tətbiqi proxy xidməti üzərindən danışmağa məcbur etməkdir. Bu bölmədə trafiki tutmaq, datanı analiz etmək və şəbəkə protokolunu exploit etmək üçün istifadə edə biləcəyiniz yayğın proxy tiplərinin nisbi üstünlüklərini və çatışmazlıqlarını izah edəcəyəm. Həmçinin tipik müştəri tətbiqlərinin trafikini proxy-yə necə yönləndirməyi göstərəcəyəm.
+
+Port-Forwarding Proxy
+
+Port forwarding bağlantını proxy-ləməyin ən asan yoludur. Sadəcə dinləyən server (TCP və ya UDP) qaldırın və yeni bağlantını gözləyin. Proxy serverə yeni bağlantı gəldikdə, real xidmətə forwarding bağlantısı açılır və ikisi məntiqi olaraq birləşdirilir (Şəkil 2-8).
+
+/picture
+
+Şəkil 2-8: TCP port-forwarding proxy-yə ümumi baxış
+
+Sadə Implementasiya
+
+Proxy yaratmaq üçün Canape Core kitabxanalarına daxil olan built-in TCP port forwarder-dən istifadə edəcəyik. Listing 2-4 kodunu C# script faylına yerləşdirin və LOCALPORT ②, REMOTEHOST ③, REMOTEPORT ④ dəyərlərini şəbəkənizə uyğun dəyişin.
+PortFormatProxy.csx
+________________________________________________________________________________
+// PortFormatProxy.csx – Sadə TCP port-forwarding proxy
+// WriteLine və WritePackets kimi metodları açır
+using static System.Console;
+using static CANAPE.Cli.ConsoleUtils;
+
+// Proxy şablonu yarat
+var template = new ①FixedProxyTemplate();
+template.LocalPort = ②LOCALPORT;
+template.Host = ③"REMOTEHOST";
+template.Port = ④REMOTEPORT;
+
+// Proxy instansiyasını yarat və başlat
+⑤ var service = template.Create();
+service.Start();
+
+WriteLine("Created {0}", service);
+WriteLine("Press Enter to exit...");
+ReadLine();
+⑥ service.Stop();
+
+// Paketləri çıxart
+var packets = service.Packets;
+WriteLine("Captured {0} packets:",
+	packets.Count);
+⑦ WritePackets(packets);
+________________________________________________________________________________
+
+Listing 2-4: Sadə TCP port-forwarding proxy nümunəsi
+
+	Bu çox sadə script ①-də FixedProxyTemplate instansiyası yaradır. Canape Core template modelində işləyir, baxmayaraq lazım gəlsə low-level şəbəkə konfiqurasiyasına da enmək olar. Script template-i lazımi local və remote şəbəkə məlumatı ilə konfiqurasiya edir. ⑤-də template-dən service instansiyası yaradılır; framework-də sənədləri xidmət şablonları kimi düşünə bilərsiniz. Yeni service başladılır və bu anda şəbəkə bağlantıları konfiqurasiya olunur. Klaviş basılmasını gözlədikdən sonra service ⑥-da dayandırılır. Daha sonra bütün tutulmuş paketlər WritePackets() metodu ⑦ ilə konsola yazdırılır.
+	Bu script işlədildikdə forwarding proxy instansiyasını yalnız localhost interfeysi üzərində LOCALPORT nömrəsinə bind etməlidir. Həmin porta yeni TCP bağlantısı gəldikdə, proxy kodu REMOTEHOST üzərində REMOTEPORT TCP portuna yeni bağlantı açmalı və iki əlaqəni bir-birinə bağlamalıdır.
+
+WARNING
+Proxy-ni bütün şəbəkə ünvanlarına bind etmək təhlükəsizlik baxımından risklidir, çünki protokol testləri üçün yazılan proxy-lər nadir hallarda dayanıqlı təhlükəsizlik mexanizmləri implement edir. Qoşulduğunuz şəbəkəyə tam nəzarətiniz yoxdursa və ya başqa çıxış yolu yoxdursa, proxy-ni yalnız local loopback interfeysinə bind edin. Listing 2-4-də default LOCALHOST-dur; bütün interfeyslərə bind etmək üçün AnyBind xüsusiyyətini true edin.
+
+Trafikin Proxy-yə Yönləndirilməsi
+
+Sadə proxy tətbiqimiz hazır olduğuna görə indi tətbiq trafikini onun üzərindən keçirməliyik.
+	Veb brauzer üçün bu sadədir: xüsusi sorğunu tutmaq üçün http://www.domain.com/resource URL forması əvəzinə http://localhost:localport/resource istifadə edin; beləliklə sorğu port-forwarding proxy-dən keçəcək.
+	Digər tətbiqlər daha çətindir: bəzən tətbiqin konfiqurasiya ayarlarına dərindən baxmaq lazım gəlir. Bəzən dəyişə biləcəyiniz yeganə parametr təyinat IP ünvanı olur. Amma bu, “chicken-and-egg” vəziyyəti yarada bilər: tətbiqin həmin ünvanla hansı TCP/UDP portlarından istifadə etdiyini bilmirsiniz, xüsusilə tətbiq müxtəlif xidmət bağlantıları üzərində mürəkkəb funksiyalar işlədirsə. Bu, Common Object Request Broker Architecture (CORBA) kimi Remote Procedure Call (RPC) protokollarında baş verir. Bu protokol adətən əvvəlcə broker-ə ilkin şəbəkə bağlantısı yaradır; broker mövcud xidmətlərin kataloqu kimi işləyir. Sonra tələb olunan xidmətə instansiyaya-məxsus TCP portu üzərindən ikinci bağlantı açılır.
+	Bu halda yaxşı yanaşma tətbiqin şəbəkəyə bağlı maksimum funksiyalarından istifadə etmək və eyni vaxtda passiv tutma texnikaları ilə monitorinq aparmaqdır. Bu yolla tətbiqin adətən hansı bağlantıları qurduğunu aşkar edib onları forwarding proxy-lərlə asanlıqla təkrarlaya bilərsiniz.
+	Əgər tətbiq təyinatını dəyişməyə imkan vermirsə, daha yaradıcı olmalısınız. Tətbiq server ünvanını hostname vasitəsilə həll edirsə, daha çox seçiminiz olur. Sorğulara proxy-nizin IP ünvanı ilə cavab verən custom DNS server qura bilərsiniz. Yaxud əksər əməliyyat sistemlərində, o cümlədən Windows-da olan hosts faylından istifadə edə bilərsiniz — əlbəttə tətbiqin işlədiyi cihazda sistem fayllarına nəzarətiniz varsa.
+	Hostname resolving zamanı OS (və ya resolving kitabxanası) əvvəlcə həmin ad üçün lokal entry olub-olmadığını yoxlamaq üçün hosts faylına baxır; entry tapılmazsa DNS sorğusu göndərir. Məsələn, Listing 2-5-dəki hosts faylı www.badgers.com və www.domain.com hostnamelərini localhost-a yönləndirir.
+________________________________________________________________________________
+# Standart Localhost ünvanları
+127.0.0.1	localhost
+::1		localhost
+
+# Trafiki proxy-dən keçirmək üçün dummy entry-lər
+127.0.0.1	www.badgers.com
+127.0.0.1	www.domain.com
+________________________________________________________________________________
+
+Listing 2-5: hosts faylı nümunəsi
+
+	Unix-like OS-larda hosts faylının standart yeri /etc/hosts, Windows-da isə C:\Windows\System32\Drivers\etc\hosts-dur. Təbii ki, mühitinizə görə Windows qovluğunun yolunu uyğunlaşdırmalısınız.
+
+Note
+Bəzi antivirus və təhlükəsizlik məhsulları sistem hosts faylındakı dəyişiklikləri izləyir, çünki bu cür dəyişikliklər zərərli proqram əlaməti ola bilər. Hosts faylını dəyişmək üçün məhsulun qorumasını müvəqqəti söndürməyiniz lazım gələ bilər.
+
+Port-Forwarding Proxy-nin Üstünlükləri
+
+Port-forwarding proxy-nin əsas üstünlüyü sadəliyidir: bağlantını gözləyirsiniz, orijinal təyinata yeni bağlantı açırsınız, sonra iki tərəf arasında trafiki ötürürsünüz. Proxy ilə bağlı ayrıca protokol idarə etməyə ehtiyac yoxdur və trafiki tutmaq istədiyiniz tətbiq tərəfindən xüsusi dəstək tələb olunmur.
+	Port-forwarding proxy həmçinin UDP trafikinin proxy-lənməsi üçün əsas yoldur; UDP connection-oriented olmadığı üçün UDP forwarder implementasiyası xeyli sadədir.
+
+Port-Forwarding Proxy-nin Çatışmazlıqları
+
+Port-forwarding proxy-nin sadəliyi onun çatışmazlıqlarına da səbəb olur. Dinləyən bağlantıdan trafiki yalnız tək təyinata yönləndirdiyiniz üçün tətbiq fərqli portlarda bir neçə protokoldan istifadə edirsə, bir neçə proxy instansiyası tələb oluna bilər. Məsələn, tətbiqin təyinatı üçün idarə edə bildiyiniz tək hostname/IP var (birbaşa konfiqurasiya ilə və ya hostname spoof etməklə). Tətbiq həmin ünvana TCP 443 və 1234 portlarına qoşulmağa çalışır. Siz ünvanı idarə edə bilirsiniz, portları yox; buna görə yalnız 1234 portundakı trafik maraqlı olsa belə, hər iki port üçün forwarding proxy qurmalısınız.
+	Bu proxy tanınmış porta birdən çox bağlantını idarə etməyi də çətinləşdirə bilər. Məsələn, port-forwarding proxy 1234 portunda dinləyir və www.domain.com:1234-ə qoşulursa, gözlənildiyi kimi yalnız orijinal domenin yönləndirilmiş trafiki işləyəcək. Əlavə olaraq www.badgers.com-u da yönləndirmək istəsəniz, iş çətinləşir. Tətbiq təyinat ünvanı/portunu ayrıca göstərməyi dəstəkləyirsə və ya Destination Network Address Translation (DNAT) kimi üsullardan istifadə etsəniz, bunu qismən yüngülləşdirmək olar. (5-ci fəsildə DNAT və digər daha inkişaf etmiş tutma texnikaları haqqında əlavə məlumat var.)
+	Əlavə olaraq, protokol öz məqsədləri üçün təyinat ünvanından istifadə edə bilər. Məsələn, HyperText Transport Protocol (HTTP)-da Host header Virtual Host qərarları üçün istifadə oluna bilər; bu da port-forward olunmuş protokolun yönləndirilmiş bağlantıdan fərqli işləməsinə və ya heç işləməməsinə səbəb ola bilər. Bununla belə, ən azı HTTP üçün bu məhdudiyyətə workaround-u “Reverse HTTP Proxy” bölməsində (səhifə 32) müzakirə edəcəyəm.
+
+SOCKS Proxy
+
+SOCKS proxy-ni “gücləndirilmiş” port-forwarding proxy kimi düşünün. O yalnız TCP bağlantılarını istənilən şəbəkə nöqtəsinə forward etmir; bütün yeni bağlantılar sadə handshake protokolu ilə başlayır və proxy-yə sabit təyinat vermək əvəzinə son təyinatı bildirir. O həmçinin dinləyən bağlantıları dəstəkləyə bilər; bu, serverin data göndərməsi üçün yeni lokal portlar açmalı olan File Transfer Protocol (FTP) kimi protokollar üçün vacibdir. Şəkil 2-9 SOCKS proxy-yə ümumi baxış təqdim edir.
+
+/picture
+
+Şəkil 2-9: SOCKS proxy-yə ümumi baxış
+
+	Hazırda protokolun üç yayğın variantı var — SOCKS 4, 4a və 5 — və hər birinin öz istifadə sahəsi mövcuddur. Versiya 4 ən çox dəstəklənən versiyadır; lakin yalnız IPv4 bağlantılarını dəstəkləyir və təyinat ünvanı 32-bit IP kimi göstərilməlidir. Versiya 4-ün yenilənməsi olan 4a hostname ilə bağlantıya icazə verdi (IP ünvanını həll edən DNS serveriniz yoxdursa faydalıdır). Versiya 5 hostname dəstəyi, IPv6, UDP forwarding və təkmilləşdirilmiş autentifikasiya mexanizmləri gətirdi; həm də RFC (1928) ilə spesifikasiya edilən yeganə versiyadır.
+	Nümunə olaraq müştəri 10.0.0.1 IP ünvanında 12345 portuna SOCKS bağlantısı yaratmaq üçün Şəkil 2-10-da göstərilən sorğunu göndərir. USERNAME hissəsi SOCKS versiya 4-də yeganə autentifikasiya üsuludur (çox təhlükəsiz deyil). VER versiya nömrəsini göstərir, bu halda 4-dür. CMD çıxış bağlantısı istədiyini bildirir (ünvana bind etmək CMD 2-dir), TCP portu və ünvan isə binary formada ötürülür.
+
+/picture
+
+Şəkil 2-10: SOCKS versiya 4 sorğusu
+
+	Bağlantı uğurlu olarsa, Şəkil 2-11-dəki kimi cavab qaytarılır. RESP sahəsi cavab statusunu göstərir; TCP portu və ünvan sahələri yalnız bind sorğularında əhəmiyyət daşıyır. Bundan sonra bağlantı şəffaf olur və müştəri ilə server birbaşa danışıqlar aparır; proxy server yalnız hər iki istiqamətdə trafiki forward edir.
+
+/picture
+
+Şəkil 2-11: SOCKS versiya 4 uğurlu cavabı
+
+Sadə Implementasiya
+
+Canape Core kitabxanalarında SOCKS 4, 4a və 5 üçün built-in dəstək var. Listing 2-6 kodunu C# script faylına yerləşdirin və LOCALPORT ② dəyərini SOCKS proxy üçün dinləmək istədiyiniz lokal TCP porta dəyişin.
+SocksProxy.csx
+________________________________________________________________________________
+// SocksProxy.csx – Sadə SOCKS proxy
+// WriteLine və WritePackets kimi metodları açır
+using static System.Console;
+using static CANAPE.Cli.ConsoleUtils;
+
+// SOCKS proxy template-i yarat
+① var template = new SocksProxyTemplate();
+template.LocalPort = ②LOCALPORT;
+// Proxy instansiyasını yarat və başlat
+var service = template.Create();
+service.Start();
+WriteLine("Created {0}", service);
+WriteLine("Press Enter to exit...");
+ReadLine();
+service.Stop();
+
+// Paketləri çıxart
+var packets = service.Packets;
+WriteLine("Captured {0} packets:",
+	packets.Count);
+WritePackets(packets);
+________________________________________________________________________________
+
+Listing 2-6: Sadə SOCKS proxy nümunəsi
+
+	Listing 2-6 Listing 2-4-dəki TCP port-forwarding proxy ilə eyni pattern-i izləyir. Sadəcə bu dəfə ①-də SOCKS proxy template-i yaradılır. Kodun qalan hissəsi tam eynidir.
+
+Trafikin Proxy-yə Yönləndirilməsi
+
+Tətbiq trafikini SOCKS proxy-dən keçirməyin yolunu tapmaq üçün əvvəlcə tətbiqin özünə baxın. Məsələn, Mozilla Firefox-da proxy ayarlarını açanda Şəkil 2-12-dəki dialoq görünür və oradan Firefox-u SOCKS proxy istifadə edəcək şəkildə qura bilərsiniz.
+
+/picture
+
+Şəkil 2-12: Firefox proxy konfiqurasiyası
+
+	Bəzən isə SOCKS dəstəyi açıq görünmür. Java tətbiqi test edirsinizsə, Java Runtime command line parametrləri ilə istənilən outbound TCP bağlantısında SOCKS dəstəyini aktiv edə bilər. Məsələn, Listing 2-7-dəki sadə Java tətbiqi 192.168.10.1 IP ünvanında 5555 porta qoşulur.
+SocketClient.java
+________________________________________________________________________________
+// SocketClient.java – Sadə Java TCP socket müştərisi
+import java.io.PrintWriter;
+import java.net.Socket;
+
+public class SocketClient {
+	public static void main(String[] args) {
+		try {
+			Socket s = new Socket("192.168.10.1", 5555);
+			PrintWriter out = new PrintWriter(s.getOutputStream(), true);
+			out.println("Hello World!");
+			s.close();
+		} catch(Exception e) {
+		}
+	}
+}
+________________________________________________________________________________
+
+Listing 2-7: Sadə Java TCP müştərisi
+
+	Bu compile olunmuş proqramı normal işlətsəniz gözlənilən kimi davranacaq. Amma command line-da iki xüsusi system property — socksProxyHost və socksProxyPort — versəniz, istənilən TCP bağlantısı üçün SOCKS proxy təyin edə bilərsiniz:
+________________________________________________________________________________
+java –DsocksProxyHost=localhost –DsocksProxyPort=1080 SocketClient
+________________________________________________________________________________
+
+	Bu, TCP bağlantısını localhost 1080 portundakı SOCKS proxy üzərindən keçirəcək.
+	SOCKS proxy-yə trafik yönləndirməyin başqa yolu OS-in default proxy ayarlarına baxmaqdır. macOS-da System Preferences > Network > Advanced > Proxies yolunu izləyin. Şəkil 2-13-dəki dialoq görünəcək. Buradan sistem miqyasında SOCKS proxy və ya digər protokollar üçün ümumi proxy-ləri konfiqurasiya edə bilərsiniz. Bu hər zaman işləməsə də, sınamağa dəyən asan seçimdir.
+	Bundan əlavə, əgər tətbiq nativ olaraq SOCKS proxy-ni dəstəkləmirsə, bəzi alətlər bu funksiyanı istənilən tətbiqə əlavə edə bilir. Bunlar Linux-da Dante (https://www.inet.no/dante/) kimi pulsuz/open source alətlərdən tutmuş, Windows və macOS-da işləyən Proxifier (https://www.proxifier.com/) kimi kommersiya alətlərinə qədər dəyişir. Bu alətlərin hamısı bir şəkildə tətbiqə inject olub SOCKS dəstəyi əlavə edir və socket funksiyalarının işini dəyişdirir.
+
+/picture
+
+Şəkil 2-13: macOS-da proxy konfiqurasiya dialoqu
+
+SOCKS Proxy-nin Üstünlükləri
+
+Sadə port forwarder ilə müqayisədə SOCKS proxy-nin açıq üstünlüyü budur ki, tətbiqin qurduğu bütün TCP bağlantılarını (və SOCKS 5 istifadə edilərsə bəzi UDP trafiki də) tuta bilir. Bu üstünlük OS socket layının bütün bağlantıları effektiv şəkildə proxy-dən keçirməsi halında keçərlidir.
+	SOCKS proxy ümumilikdə müştəri tətbiqinin baxış bucağından bağlantının təyinatını qoruyur. Buna görə müştəri tətbiqi endpoint-ə istinad edən in-band data göndərirsə, endpoint serverin gözlədiyi kimi olacaq. Ancaq bu mənbə ünvanını qorumaq demək deyil. FTP kimi bəzi protokollar başlanğıc müştəridə port açmağı tələb edir. SOCKS protokolu dinləyən bağlantıları bind etmək üçün imkan təqdim edir, lakin implementasiya mürəkkəbliyini artırır. Bu da tutma və analizi çətinləşdirir, çünki serverə gedib-gələn bir çox fərqli data axınını nəzərə almalısınız. SOCKS Proxy-nin çatışmazlıqları SOCKS dəstəyinin tətbiqlər və platformalar arasında qeyri-sabit olması əsas çatışmazlıqdır. Windows system proxy yalnız SOCKS versiya 4 proxy-lərini dəstəkləyir; bu da yalnız lokal hostname-lərin həll olunması deməkdir. IPv6 dəstəyi və güclü autentifikasiya mexanizmi yoxdur. Ümumən mövcud tətbiqə SOCKS aləti əlavə etməklə daha yaxşı dəstək əldə edilir, amma bu da hər zaman problemsiz işləmir.
+
+HTTP Proxy-lər
+
+HTTP World Wide Web-i, eləcə də çoxsaylı web service və RESTful protokolları gücləndirir. Şəkil 2-14 HTTP proxy-yə ümumi baxış verir. Protokol, ən məhdudlaşdırıcı firewall-lardan keçə bildiyi üçün Java Remote Method Invocation (RMI) və ya Real Time Messaging Protocol (RTMP) kimi qeyri-veb protokollar üçün də transport mexanizmi kimi istifadə oluna bilər. HTTP proxy-ləmənin praktikada necə işlədiyini başa düşmək vacibdir, çünki web service test edilməsə belə protokol analizi üçün demək olar ki, mütləq lazım olacaq. Mövcud web tətbiq test alətləri HTTP orijinal mühitindən kənarda istifadə olunanda nadir hallarda ideal nəticə verir. Bəzən öz HTTP proxy implementasiyanızı yazmaq yeganə həll olur.
+
+/picture
+
+Şəkil 2-14: HTTP proxy-yə ümumi baxış
+
+	HTTP proxy-nin iki əsas tipi var: forwarding proxy və reverse proxy. Şəbəkə protokolu analizi baxımından hər birinin öz üstünlükləri və çatışmazlıqları var.
+
+Forwarding HTTP Proxy
+
+HTTP protokolu versiya 1.0 üçün RFC 1945-də, versiya 1.1 üçün RFC 2616-da təsvir olunub; hər iki versiya HTTP sorğularını proxy-ləmək üçün sadə mexanizm təqdim edir. Məsələn, HTTP 1.1 sorğunun ilk tam sətiri olan request line üçün aşağıdakı formatı müəyyən edir:
+________________________________________________________________________________
+①GET ②/image.jpg HTTP/1.1
+________________________________________________________________________________
+
+	Method ① həmin sorğuda nə ediləcəyini tanış fellərlə bildirir: GET, POST, HEAD və s. Proxy sorğusunda bu, normal HTTP bağlantısından dəyişmir. Path ② isə maraqlı hissədir. Göstərildiyi kimi absolute path method-un təsir edəcəyi resursu göstərir. Vacib məqam budur ki, path absolute Uniform Request Identifier (URI) də ola bilər. Absolute URI göstərməklə proxy server təyinatla yeni bağlantı qurub bütün trafiki forward edə və cavabı müştəriyə qaytara bilər. Proxy hətta məhdud şəkildə trafiki manipulyasiya edib autentifikasiya əlavə edə, 1.0 serverləri 1.1 müştərilərdən gizlədə, transfer compression əlavə edə və daha çox iş görə bilər. Lakin bu elastiklik qiymətsiz deyil: proxy server HTTP trafikini emal edə bilməlidir və bu ciddi mürəkkəblik yaradır. Məsələn, aşağıdakı request line uzaq serverdəki image resursuna proxy vasitəsilə çıxış edir:
+________________________________________________________________________________
+GET http://www.domain.com/image.jpg HTTP/1.1
+________________________________________________________________________________
+
+	Diqqətli oxucu kimi siz bu yanaşmada bir problemi fərq etmiş ola bilərsiniz: proxy əsas HTTP protokolunu emal etməlidirsə, HTTP-ni şifrəli TLS üzərindən daşıyan HTTPS nə olacaq? Şifrəli trafiki açmaq olar, lakin normal mühitdə HTTP müştərisi təqdim etdiyiniz sertifikata etibar etməyə bilər. Üstəlik TLS qəsdən elə dizayn edilib ki, man-in-the-middle hücumunu başqa yollarla etmək praktiki olaraq mümkün olmasın. Xoşbəxtlikdən bu əvvəlcədən düşünülüb və RFC 2817 iki həll verir: HTTP bağlantısını şifrələməyə yüksəltmək imkanı (burada detallara ehtiyac yoxdur) və məqsədimiz üçün daha vacibi, HTTP proxy üzərindən şəffaf tunel bağlantısı yaratmaq üçün CONNECT method-u. Məsələn, HTTPS saytına proxy bağlantısı qurmaq istəyən brauzer proxy-yə belə sorğu göndərə bilər:
+________________________________________________________________________________
+CONNECT www.domain.com:443 HTTP/1.1
+________________________________________________________________________________
+
+	Proxy bu sorğunu qəbul etsə, serverə yeni TCP bağlantısı açacaq. Uğurlu olarsa aşağıdakı cavabı qaytarmalıdır:
+________________________________________________________________________________
+HTTP/1.1 200 Connection Established
+________________________________________________________________________________
+
+	Bundan sonra proxy-yə TCP bağlantısı şəffaf olur və brauzer proxy mane olmadan razılaşdırılmış TLS bağlantısını qura bilir. Təbii ki, qeyd etmək lazımdır ki, proxy bu bağlantıda həqiqətən TLS istifadə olunduğunu adətən yoxlamır. İstənilən protokol ola bilər və bəzi tətbiqlər bundan sui-istifadə edərək öz binary protokollarını HTTP proxy-lərdən tunelləyir. Buna görə HTTP proxy yerləşdirmələrində tunellənə bilən portların çox məhdud dəst ilə məhdudlaşdırılması yayğındır.
+
+Sadə Implementasiya
+
+Yenə də Canape Core kitabxanalarında HTTP proxy-nin sadə implementasiyası var. Təəssüf ki, onlar şəffaf tunel yaratmaq üçün CONNECT method-unu dəstəkləmir, amma nümayiş üçün kifayətdir. Listing 2-8 kodunu C# script faylına yerləşdirin və LOCALPORT ② dəyərini dinlənəcək lokal TCP porta dəyişin.
+HttpProxy.csx		
+________________________________________________________________________________
+// HttpProxy.csx – Sadə HTTP proxy
+// WriteLine və WritePackets kimi metodları açır
+using static System.Console;
+using static CANAPE.Cli.ConsoleUtils;
+
+// Proxy template-i yarat
+① var template = new HttpProxyTemplate();
+template.LocalPort = ②LOCALPORT;
+
+// Proxy instansiyasını yarat və başlat
+var service = template.Create();
+service.Start();
+
+WriteLine("Created {0}", service);
+WriteLine("Press Enter to exit...");
+ReadLine();
+service.Stop();
+
+// Paketləri çıxart
+var packets = service.Packets;
+WriteLine("Captured {0} packets:", packets.Count);
+WritePackets(packets);
+________________________________________________________________________________
+
+Listing 2-8: Sadə forwarding HTTP proxy nümunəsi
+
+	Burada forwarding HTTP proxy yaratdıq. u sətrindəki kod əvvəlki nümunələrin cüzi variasiyasıdır və HTTP proxy template-i yaradır.
+
+Trafikin Proxy-yə Yönləndirilməsi
+
+SOCKS proxy-lərdə olduğu kimi ilk dayanacaq tətbiqin özüdür. HTTP protokolundan istifadə edən tətbiqin hansısa proxy konfiqurasiyasına malik olmaması nadir haldır. Tətbiqdə HTTP proxy üçün xüsusi ayar yoxdursa, SOCKS proxy ayarları ilə eyni yerdə olan OS konfiqurasiyasını sınayın. Məsələn, Windows-da Control Panel > Internet > Options > Connections > LAN Settings yolu ilə system proxy ayarlarına daxil ola bilərsiniz.
+	Unix-like sistemlərdə curl, wget və apt kimi bir çox command line utility də HTTP proxy-ni environment variable-lar vasitəsilə təyin etməyi dəstəkləyir. http_proxy mühit dəyişəninə proxy URL-ni versəniz (məsələn, http://localhost:3128), tətbiq onu istifadə edəcək. Təhlükəsiz trafik üçün https_proxy də istifadə oluna bilər. Bəzi implementasiyalar socks4:// kimi xüsusi URL schema-larına da icazə verir ki, SOCKS proxy istədiyinizi göstərəsiniz.
+
+Forwarding HTTP Proxy-nin Üstünlükləri
+
+Forwarding HTTP proxy-nin əsas üstünlüyü budur ki, tətbiq yalnız HTTP istifadə edirsə, proxy dəstəyi əlavə etmək üçün Request Line-dakı absolute path-i absolute URI-yə dəyişib datanı dinləyən proxy serverə göndərməsi kifayətdir. Həmçinin HTTP-ni transport kimi istifadə edən tətbiqlərin çoxu artıq proxy dəstəyi verir. Forwarding HTTP Proxy-nin çatışmazlıqları Forwarding HTTP proxy-nin protokolun çoxsaylı idiosyncrasy-lərini idarə etmək üçün tam HTTP parser implement etməsi tələbi əhəmiyyətli mürəkkəblik yaradır; bu mürəkkəblik emal problemlərinə, ən pis halda isə təhlükəsizlik boşluqlarına səbəb ola bilər. Üstəlik protokol daxilində proxy təyinatının əlavə olunması xarici texnikalarla mövcud tətbiqə HTTP proxy dəstəyi retrofit etməyi çətinləşdirə bilər — yalnız bağlantıları CONNECT method-una çevirməklə (şifrəsiz HTTP üçün də işləyir) bunu yüngülləşdirmək mümkündür.
+	Tam HTTP 1.1 bağlantısının idarə olunmasının mürəkkəbliyinə görə proxy-lər çox vaxt ya tək sorğudan sonra müştərini disconnect edir, ya da kommunikasiya versiyasını 1.0-a endirir (bu versiya cavab datası bitəndən sonra bağlantını həmişə bağlayır). Bu isə performans və ya state locality üçün bir neçə sorğunu paralel daşıma imkanı verən request pipelining gözləyən yüksək səviyyəli protokolu poza bilər.
+
+Reverse HTTP Proxy
+
+Forwarding proxy-lər daxili müştərinin xarici şəbəkəyə qoşulduğu mühitlərdə kifayət qədər yayğındır. Onlar təhlükəsizlik sərhədi rolunu oynayır və outbound trafiki az sayda protokol tipinə məhdudlaşdırır. (CONNECT proxy-nin potensial təhlükəsizlik nəticələrini hələlik kənara qoyaq.) Amma bəzən inbound bağlantıları proxy-ləmək istəyə bilərsiniz; məsələn, load-balancing və ya təhlükəsizlik səbəbilə (serverləri birbaşa internetə açmamaq üçün). Burada problem yaranır: müştəri üzərində nəzarətiniz yoxdur. Hətta müştəri çox vaxt proxy-yə qoşulduğunu belə bilmir. Reverse HTTP proxy məhz bu nöqtədə işə yarayır.
+	Forwarding proxy-dəki kimi request line-da təyinat hostunu göstərmək əvəzinə, HTTP 1.1 uyğunluqlu bütün müştərilərin sorğuda Host HTTP header-i göndərmək məcburiyyətindən istifadə edə bilərsiniz; bu header sorğunun URI-sində istifadə olunan orijinal hostname-i göstərir. (Qeyd: HTTP 1.0-da bu tələb yoxdur, amma həmin versiyadan istifadə edən müştərilərin çoxu yenə də header-i göndərir.) Host header məlumatı ilə sorğunun orijinal təyinatını çıxarıb həmin serverə proxy bağlantısı qura bilərsiniz (Listing 2-9).
+________________________________________________________________________________
+GET /image.jpg HTTP/1.1
+User-Agent: Super Funky HTTP Client v1.0
+Host: ①www.domain.com
+Accept: */*
+________________________________________________________________________________
+
+Listing 2-9: HTTP sorğu nümunəsi
+
+	Listing 2-9 URL-i http://www.domain.com/image.jpg olan sorğu üçün tipik Host header-i u göstərir. Reverse proxy bu məlumatdan istifadə edib orijinal təyinatı asanlıqla bərpa edə bilər. Yenə də HTTP header-larını parse etmək tələbi olduğuna görə TLS ilə qorunan HTTPS trafikində istifadə daha çətindir. Xoşbəxtlikdən, bir çox TLS implementasiyası *.domain.com formasında wildcard sertifikatları qəbul edir; bu da domain.com-un istənilən subdomain-ini uyğun sayır.
+	
+Sadə Implementasiya
+
+Gözlənildiyi kimi Canape Core kitabxanalarında built-in HTTP reverse proxy implementasiyası var; HttpProxyTemplate yerinə HttpReverseProxyTemplate istifadə etmək kifayətdir. Tamlıq üçün Listing 2-10 sadə implementasiyanı göstərir. Aşağıdakı kodu C# script faylına yerləşdirin və LOCALPORT ① dəyərini dinləmək istədiyiniz lokal TCP porta dəyişin. Əgər LOCALPORT 1024-dən kiçikdirsə və bunu Unix-like sistemdə işlədirsinizsə, script-i root kimi işə salmalısınız.
+ReverseHttpProxy.csx
+________________________________________________________________________________
+// ReverseHttpProxy.csx – Sadə reverse HTTP proxy
+// WriteLine və WritePackets kimi metodları açır
+using static System.Console;
+using static CANAPE.Cli.ConsoleUtils;
+
+// Proxy template-i yarat
+var template = new HttpReverseProxyTemplate();
+template.LocalPort = ①LOCALPORT;
+
+// Proxy instansiyasını yarat və başlat
+var service = template.Create();
+service.Start();
+
+WriteLine("Created {0}", service);
+WriteLine("Press Enter to exit...");
+ReadLine();
+service.Stop();
+
+// Paketləri çıxart
+var packets = service.Packets;
+WriteLine("Captured {0} packets:",
+	packets.Count);
+WritePackets(packets);
+________________________________________________________________________________
+
+Listing 2-10: Sadə reverse HTTP proxy nümunəsi
+
+Trafikin Proxy-yə Yönləndirilməsi
+
+Trafiki reverse HTTP proxy-yə yönləndirmə yanaşması TCP port-forwarding üçün edilənə bənzəyir: bağlantını proxy-yə yönləndirmək. Amma burada mühüm fərq var; sadəcə hostname-i dəyişmək olmaz. Bu, Listing 2-10-da göstərilən Host header-i dəyişdirəcək. Diqqətsiz olsanız proxy loop yarada bilərsiniz.1 Bunun əvəzinə hosts faylı ilə hostname-ə bağlı IP ünvanını dəyişmək daha düzgündür.
+	Bəlkə də test etdiyiniz tətbiq hosts faylını dəyişməyə icazə verməyən cihazda işləyir. Bu halda DNS server konfiqurasiyasını dəyişmək mümkündürsə, custom DNS server qurmaq ən asan yoldur.
+	Başqa yanaşma uyğun ayarlarla tam DNS server quraşdırmaqdır. Bu zaman aparan və səhvə açıq işdir; bir dəfə bind server quran hər kəs bunu təsdiqləyər. Xoşbəxtlikdən bizə lazım olan işi görən alətlər var: DNS sorğusuna cavab olaraq proxy IP ünvanını qaytarmaq. Belə alətlərdən biri dnsspoof-dur. Əlavə alət quraşdırmamaq üçün bunu Canape-in DNS serveri ilə də edə bilərsiniz. Əsas DNS server bütün DNS sorğularına tək IP ünvanı spoof edir (Listing 2-11). IPV4ADDRESS ①, IPV6ADDRESS ② və REVERSEDNS ③ dəyərlərini uyğun sətirlərlə əvəz edin. HTTP Reverse Proxy-də olduğu kimi Unix-like sistemdə bunu root kimi işlətməlisiniz, çünki port 53-ə bind etməyə çalışacaq və bu adətən normal istifadəçilərə açıq olmur. Windows-da 1024-dən kiçik portlara bind məhdudiyyəti yoxdur.
+
+DnsServer.csx		
+________________________________________________________________________________
+// DnsServer.csx – Sadə DNS Server
+// Qlobal səviyyədə WriteLine kimi konsol metodlarını açır.
+using static System.Console;
+
+// DNS server template-i yarat
+var template = new DnsServerTemplate();
+
+// Cavab ünvanlarını qur
+template.ResponseAddress = u"IPV4ADDRESS";
+template.ResponseAddress6 = v"IPV6ADDRESS";
+template.ReverseDns = w"REVERSEDNS";
+
+// DNS server instansiyasını yarat və başlat
+var service = template.Create();
+service.Start();
+WriteLine("Created {0}", service);
+WriteLine("Press Enter to exit...");
+ReadLine();
+service.Stop();
+________________________________________________________________________________
+
+Listing 2-11: Sadə DNS server
+
+1. Proxy loop proxy-nin davamlı şəkildə özünə qoşulması ilə yaranır və rekursiv döngü yaradır.
+Nəticə yalnız fəlakət ola bilər, ən azı isə mövcud resursların tükənməsi.
+
+	İndi tətbiqin DNS serverini spoofing DNS serverinizə yönləndirsəniz, tətbiq trafiki onun üzərindən göndərməlidir.
+	
+Reverse HTTP Proxy-nin Üstünlüyü
+
+Reverse HTTP proxy-nin üstünlüyü ondadır ki, müştəri tətbiqinin tipik forwarding proxy konfiqurasiyasını dəstəkləməsi tələb olunmur. Bu, xüsusilə müştəri tətbiqi birbaşa nəzarətinizdə deyilsə və ya dəyişdirilməsi çətin sabit konfiqurasiyaya malikdirsə faydalıdır. Orijinal TCP bağlantılarını proxy-yə yönləndirməyə məcbur edə bildiyiniz müddətdə, çoxsaylı hostlara gedən sorğuları az çətinliklə idarə etmək mümkündür.
+
+Reverse HTTP Proxy-nin Çatışmazlıqları
+
+Reverse HTTP proxy-nin çatışmazlıqları əsasən forwarding proxy ilə eynidir. Proxy HTTP sorğusunu parse etməli və protokolun idiosyncrasy-lərini idarə edə bilməlidir.
+
+Yekun Söz
+
+Bu fəsildə passiv və aktiv tutma texnikalarını oxudunuz; bəs biri digərindən yaxşıdırmı? Bu, test etmək istədiyiniz tətbiqdən asılıdır. Sadəcə şəbəkə trafikini monitorinq etmirsinizsə, aktiv yanaşma daha sərfəlidir. Kitab boyu irəlilədikcə görəcəksiniz ki, aktiv tutma protokol analizi və exploit üçün əhəmiyyətli üstünlüklər verir. Tətbiqinizdə seçim imkanınız varsa, bir çox halda ən asan yanaşma olduğuna görə SOCKS-dan istifadə edin.
